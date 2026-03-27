@@ -3,3 +3,4 @@
 __pycache__/*
 __pycache__/poker_db.cpython-312.pyc
 poker/*
+target/*
