@@ -102,12 +102,12 @@ def odds_calculator(cur_hand, community_cards, street):
 
 
 def rec_brute_force(cur_hand, community_cards, further_depth):
-    deck = []  # TODO: import list of formatted cards
+    deck = ["Ah", "Ad", "Ac", "As", "Kh", "Kd", "Kc", "Ks", "Jh", "Jd", "Jc", "Js", "10h", "10d", "10c", "10s", "9h", "9d", "9c", "9s", "8h", "8d", "8c", "8s", "7h", "7d", "7c", "7s", "6h", "6d", "6c", "6s", "5h", "5d", "5c", "5s", "4h", "4d", "4c", "4s", "3h", "3d", "3c", "3s", "2h", "2d", "2c", "2s"]  # TODO: import list of formatted cards
 
     if further_depth == 0:# if we're as far in as we need to be
         better_cards = 0  # int to count how many card combos are better than ours
         deck = [] #TODO: import list of formatted cards
-        for card_1 in deck:
+        for card_1 in deck
             deck.remove(card_1) # prevents repetition, halving the number of computations
             for card_2 in deck:
                 if not our_hand_is_better(cur_hand, [card_1, card_2], community_cards):
