@@ -91,9 +91,38 @@ class GameState:
 #   YOUR BOT LOGIC — EDIT ONLY THIS SECTION
 # ════════════════════════════════════════════
 # ─────────────────────────────────────────────
+#0 High Card 
+#1 Pair 
+#2 Two Pair 
+#3 Three of a kind 
+#4 straight
+#5 flush 
+#6 full house 
+#7 four of kind 
+#8 straight flush 
+#9 royal flush 
+#A= 14
+#K= 13
+#Q= 12
+#J= 11
+#10-2 is their own value 
+#High Card --> Just the card value 
+#Pair--> Double the card value 
+#Three of a kind --> triple the value 
+#straight --> Starts at 43 for low straight and is raised for higher straights 
+
+def rank_hand(hand, community):
+    for card in hand:
+        for communitycard in community:
+            if card[0] == communitycard[0]:
+
+                
 
 def our_hand_is_better(our_hand, possible_hand, community_cards):
     #TODO
+    
+
+
     pass
 
 def odds_calculator(cur_hand, community_cards, street):
@@ -107,7 +136,7 @@ def rec_brute_force(cur_hand, community_cards, further_depth):
     if further_depth == 0:# if we're as far in as we need to be
         better_cards = 0  # int to count how many card combos are better than ours
         deck = [] #TODO: import list of formatted cards
-        for card_1 in deck
+        for card_1 in deck:
             deck.remove(card_1) # prevents repetition, halving the number of computations
             for card_2 in deck:
                 if not our_hand_is_better(cur_hand, [card_1, card_2], community_cards):
