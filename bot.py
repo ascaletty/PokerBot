@@ -92,6 +92,33 @@ class GameState:
 # ════════════════════════════════════════════
 # ─────────────────────────────────────────────
 
+def our_hand_is_better(our_hand, possible_hand, community_cards):
+    #TODO
+    pass
+
+def odds_calculator(cur_hand, community_cards, street):
+    #TODO: evaluate current hand to save on resources
+    pass
+
+
+def rec_brute_force(cur_hand, community_cards, further_depth):
+    deck = []  # TODO: import list of formatted cards
+
+    if further_depth == 0:# if we're as far in as we need to be
+        better_cards = 0  # int to count how many card combos are better than ours
+        deck = [] #TODO: import list of formatted cards
+        for card_1 in deck:
+            deck.remove(card_1) # prevents repetition, halving the number of computations
+            for card_2 in deck:
+                if not our_hand_is_better(cur_hand, [card_1, card_2], community_cards):
+                    better_cards += 1  # if the possible hand is better, increment this by 1
+        return better_cards # how many are better in this path
+
+    else:
+        running_total = 0 # number of beating values in this branc
+        for next_possible_community_card in deck:
+             running_total += (cur_hand, community_cards + next_possible_community_card, further_depth - 1)
+
 def decide(state: GameState):
     """
     Given the current game state, return your action.
