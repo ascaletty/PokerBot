@@ -1,11 +1,11 @@
 [package]
-name = "poker_server"
+name = "poker"
 version = "0.1.0"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "poker_server"
+name = "poker_server_rust"
 crate-type = ["cdylib"]
 
 [dependencies]

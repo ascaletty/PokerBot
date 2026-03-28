@@ -1,1 +1,3 @@
+duckdb==1.5.1
 maturin==1.12.6
+-e git+ssh://git@github.com/ascaletty/PokerBot.git@4ac3481f0ee349910474565b5933d6f10e081285#egg=poker_server
