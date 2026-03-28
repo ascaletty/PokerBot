@@ -92,12 +92,22 @@ class GameState:
 # ════════════════════════════════════════════
 # ─────────────────────────────────────────────
 
-def our_hand_is_better(our_hand, possible_hand, community_cards):
+def our_hand_is_better(our_hand_score, possible_hand, community_cards):
     #TODO
     pass
 
 def odds_calculator(cur_hand, community_cards, street):
     #TODO: evaluate current hand to save on resources
+    if street == "flop":
+        beating_hands = rec_brute_force(cur_hand, community_cards, 2)
+    elif street == "turn":
+        beating_hands = rec_brute_force(cur_hand, community_cards, 1)
+    elif street == "river":
+        beating_hands = rec_brute_force(cur_hand, community_cards, 0)
+    pass
+
+
+def hand_evaluater(community_cards):
     pass
 
 
@@ -117,9 +127,9 @@ def rec_brute_force(cur_hand, community_cards, further_depth):
         return better_cards # how many are better in this path
 
     else:
-        running_total = 0 # number of beating values in this branc
+        running_total = 0 # number of beating values in this branch
         for next_possible_community_card in deck:
-             running_total += (cur_hand, community_cards + next_possible_community_card, further_depth - 1)
+             running_total += rec_brute_force(cur_hand, community_cards + next_possible_community_card, further_depth - 1)
         return running_total
 
 
