@@ -107,19 +107,39 @@ class GameState:
 #J= 11
 #10-2 is their own value 
 #High Card --> Just the card value 
-#Pair--> Double the card value 
-#Three of a kind --> triple the value 
+#Pair--> Double the card value
+#Three of a kind --> triple the value
 #straight --> Starts at 43 for low straight and is raised for higher straights 
-import poker_server 
 
-def our_hand_is_better(our_hand, possible_hand, community_cards):
+import math
+def rank_hand(hand, community):
+    for card in hand:
+        for communitycard in community:
+            if card[0] == communitycard[0]:
+                pass
+
+                
+def our_hand_is_better(our_hand_score, possible_hand, community_cards):
     #TODO
-    
-
     pass
 
 def odds_calculator(cur_hand, community_cards, street):
     #TODO: evaluate current hand to save on resources
+    if street == "flop":
+        beating_hands = rec_brute_force(cur_hand, community_cards, 2)
+        prob_of_winning = 1-(beating_hands/combination_no_rep(47, 2))
+    elif street == "turn":
+        beating_hands = rec_brute_force(cur_hand, community_cards, 1)
+        prob_of_winning = 1-(beating_hands/combination_no_rep(46, 1))
+    elif street == "river":
+        beating_hands = rec_brute_force(cur_hand, community_cards, 0)
+        prob_of_winning = 1-(beating_hands/math.factorial(45))
+    return prob_of_winning
+
+def combination_no_rep(n, r):
+    return math.factorial(n)/(math.factorial(r)*math.factorial(n-r))
+
+def hand_evaluater(community_cards):
     pass
 
 
@@ -139,9 +159,9 @@ def rec_brute_force(cur_hand, community_cards, further_depth):
         return better_cards # how many are better in this path
 
     else:
-        running_total = 0 # number of beating values in this branc
+        running_total = 0 # number of beating values in this branch
         for next_possible_community_card in deck:
-             running_total += (cur_hand, community_cards + next_possible_community_card, further_depth - 1)
+             running_total += rec_brute_force(cur_hand, community_cards + next_possible_community_card, further_depth - 1)
         return running_total
 
 
@@ -185,6 +205,11 @@ def decide(state: GameState):
     # ── Example: simple random bot ──────────────────────────────
     # Replace everything below with your own logic!
 
+    if state.street == "preflop":
+        # can't calculate odds
+        return "fold"
+
+    hand_prob = odds_calculator(state.hole_cards, state.community, state.street)
     if state.can_check:
         return "check"
 
