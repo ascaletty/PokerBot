@@ -107,61 +107,44 @@ class GameState:
 #J= 11
 #10-2 is their own value 
 #High Card --> Just the card value 
-#Pair--> Double the card value
-#Three of a kind --> triple the value
+#Pair--> Double the card value 
+#Three of a kind --> triple the value 
 #straight --> Starts at 43 for low straight and is raised for higher straights 
-
-import math
-def rank_hand(hand, community):
-    for card in hand:
-        for communitycard in community:
-            if card[0] == communitycard[0]:
-                pass
-
-                
-def our_hand_is_better(our_hand_score, possible_hand, community_cards):
-    #TODO
-    pass
-
+from poker_server_rust import parse_card
+from poker_server_rust import exact_flop_equity
 def odds_calculator(cur_hand, community_cards, street):
     #TODO: evaluate current hand to save on resources
-    if street == "flop":
-        beating_hands = rec_brute_force(cur_hand, community_cards, 2)
-        prob_of_winning = 1-(beating_hands/combination_no_rep(47, 2))
-    elif street == "turn":
-        beating_hands = rec_brute_force(cur_hand, community_cards, 1)
-        prob_of_winning = 1-(beating_hands/combination_no_rep(46, 1))
-    elif street == "river":
-        beating_hands = rec_brute_force(cur_hand, community_cards, 0)
-        prob_of_winning = 1-(beating_hands/math.factorial(45))
-    return prob_of_winning
-
-def combination_no_rep(n, r):
-    return math.factorial(n)/(math.factorial(r)*math.factorial(n-r))
-
-def hand_evaluater(community_cards):
     pass
-
+def brute_force_aaron(curhand, community_cards, num_of_opponents):
+    curhand_parse= []
+    comcards_parse= []
+    for card in curhand:
+        curhand_parse.append(parse_card(card))
+    for card in community_cards:
+        comcards_parse.append(parse_card(card))
+    percent= exact_flop_equity(curhand_parse, comcards_parse)
+    print(percent)
 
 def rec_brute_force(cur_hand, community_cards, further_depth):
-    deck = ["Ah", "Ad", "Ac", "As", "Kh", "Kd", "Kc", "Ks", "Jh", "Jd", "Jc", "Js", "10h", "10d", "10c", "10s",
+    deck = ["Ah", "Ad", "Ac", "As", "Kh", "Kd", "Kc", "Ks", "Jh", "Jd", "Jc", "Js", "Th", "Td", "Tc", "Ts",
             "9h", "9d", "9c", "9s", "8h", "8d", "8c", "8s", "7h", "7d", "7c", "7s", "6h", "6d", "6c", "6s",
             "5h", "5d", "5c", "5s", "4h", "4d", "4c", "4s", "3h", "3d", "3c", "3s", "2h", "2d", "2c", "2s"]
-    current_score= score_five(poker_server._LUT, cur_hand)
+    current_score= evaluate(cur_hand)
+    print(current_score)
     if further_depth == 0:# if we're as far in as we need to be
         better_cards = 0  # int to count how many card combos are better than ours
         for card_1 in deck:
             deck.remove(card_1) # prevents repetition, halving the number of computations
             for card_2 in deck:
-                if not our_hand_is_better(cur_hand, [card_1, card_2], community_cards):
+                if current_score> evaluate([card_1, card_2] + community_cards):
                     better_cards += 1  # if the possible hand is better, increment this by 1
 
         return better_cards # how many are better in this path
 
     else:
-        running_total = 0 # number of beating values in this branch
+        running_total = 0 # number of beating values in this branc
         for next_possible_community_card in deck:
-             running_total += rec_brute_force(cur_hand, community_cards + next_possible_community_card, further_depth - 1)
+             running_total += rec_brute_force(cur_hand, community_cards + [next_possible_community_card], further_depth - 1)
         return running_total
 
 
@@ -205,11 +188,6 @@ def decide(state: GameState):
     # ── Example: simple random bot ──────────────────────────────
     # Replace everything below with your own logic!
 
-    if state.street == "preflop":
-        # can't calculate odds
-        return "fold"
-
-    hand_prob = odds_calculator(state.hole_cards, state.community, state.street)
     if state.can_check:
         return "check"
 
