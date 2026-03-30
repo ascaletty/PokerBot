@@ -45,8 +45,8 @@ fn build_used_mask(my: &[Card], board: &[Card]) -> DeckMask {
 
     used
 }
-fn build_deck_excluding(used: DeckMask) -> ([Card; 52], usize) {
-    let mut deck = [0u8; 52];
+fn build_deck_excluding(used: DeckMask) -> ([Card; 47], usize) {
+    let mut deck = [0u8; 47];
     let mut len = 0;
 
     for c in 0u8..52 {
@@ -225,8 +225,6 @@ fn remove2(deck: &[u8], i: usize, j: usize) -> ([u8; 2], usize) {
 fn exact_flop_equity(my: [u8; 2], flop: [u8; 3]) -> (u64, u64) {
     let (mut deck, deck_len) = build_deck_excluding(build_used_mask(&my, &flop));
 
-    let my_score = eval_7_fast_u8(&[my[0], my[1], flop[0], flop[1], flop[2], 0, 0]);
-
     let mut beat = 0u64;
     let mut total = 0u64;
 
@@ -237,31 +235,34 @@ fn exact_flop_equity(my: [u8; 2], flop: [u8; 3]) -> (u64, u64) {
             let opp = [deck[i], deck[j]];
 
             // remaining cards for turn/river
-            let mut deck2 = deck.clone();
+            let mut deck2 = deck;
 
-            remove2(&mut deck2, i, j);
+            remove2(&deck2, i, j);
             let len2 = deck2.len();
 
             for t in 0..len2 {
                 for r in t + 1..len2 {
-                    board[0] = my[0];
-                    board[1] = my[1];
-                    board[2] = flop[0];
-                    board[3] = flop[1];
-                    board[4] = flop[2];
-                    board[5] = deck2[t];
-                    board[6] = deck2[r];
+                    if t == i || t == j || r == i || r == j {
+                    } else {
+                        board[0] = my[0];
+                        board[1] = my[1];
+                        board[2] = flop[0];
+                        board[3] = flop[1];
+                        board[4] = flop[2];
+                        board[5] = deck2[t];
+                        board[6] = deck2[r];
 
-                    let my_s = eval_7_fast_u8(&board);
+                        let my_s = eval_7_fast_u8(&board);
 
-                    board[0] = opp[0];
-                    board[1] = opp[1];
+                        board[0] = opp[0];
+                        board[1] = opp[1];
 
-                    let opp_s = eval_7_fast_u8(&board);
+                        let opp_s = eval_7_fast_u8(&board);
 
-                    total += 1;
-                    if opp_s > my_s {
-                        beat += 1;
+                        total += 1;
+                        if opp_s > my_s {
+                            beat += 1;
+                        }
                     }
                 }
             }
@@ -271,87 +272,6 @@ fn exact_flop_equity(my: [u8; 2], flop: [u8; 3]) -> (u64, u64) {
     print!("equity is {}", beat / total);
     (beat, total)
 }
-// fn evaluate_7_fast(cards: Vec<Card>) -> u32 {
-//     let (rank_mask, suit_masks, rank_count) = build_masks(cards);
-//
-//     let flush_suit_idx = flush_suit(&suit_masks);
-//     let straight_high = is_straight(rank_mask);
-//
-//     // ---- find groups ----
-//     let mut four = None;
-//     let mut trips = Vec::new();
-//     let mut pairs = Vec::new();
-//
-//     for r in (0..13).rev() {
-//         match rank_count[r] {
-//             4 => four = Some(r as u8),
-//             3 => trips.push(r as u8),
-//             2 => pairs.push(r as u8),
-//             _ => {}
-//         }
-//     }
-//
-//     // ---- STRAIGHT FLUSH ----
-//     if let Some(s) = flush_suit_idx {
-//         let fm = suit_masks[s];
-//         if let Some(high) = is_straight(fm) {
-//             return high as u32; // bet possible
-//         }
-//     }
-//
-//     // ---- FOUR OF A KIND ----
-//     if let Some(q) = four {
-//         let kicker_mask = remove_rank(rank_mask, q);
-//         let kicker = top_n_from_mask(kicker_mask, 1);
-//         return 10 + ((12 - q as u32) * 13 + kicker);
-//     }
-//
-//     // ---- FULL HOUSE ----
-//     if !trips.is_empty() && (!pairs.is_empty() || trips.len() >= 2) {
-//         let t = trips[0];
-//         let p = if trips.len() >= 2 { trips[1] } else { pairs[0] };
-//         return 200 + ((12 - t as u32) * 13 + (12 - p as u32));
-//     }
-//
-//     // ---- FLUSH ----
-//     if let Some(s) = flush_suit_idx {
-//         let fm = suit_masks[s];
-//         return 400 + top_n_from_mask(fm, 5);
-//     }
-//
-//     // ---- STRAIGHT ----
-//     if let Some(high) = straight_high {
-//         return 2000 + (12 - high as u32);
-//     }
-//
-//     // ---- THREE OF A KIND ----
-//     if !trips.is_empty() {
-//         let t = trips[0];
-//         let mask = remove_rank(rank_mask, t);
-//         let kickers = top_n_from_mask(mask, 2);
-//         return 3000 + ((12 - t as u32) * 169 + kickers);
-//     }
-//
-//     // ---- TWO PAIR ----
-//     if pairs.len() >= 2 {
-//         let p1 = pairs[0];
-//         let p2 = pairs[1];
-//         let mask = rank_mask & !(1 << p1) & !(1 << p2);
-//         let kicker = top_n_from_mask(mask, 1);
-//         return 4000 + ((12 - p1 as u32) * 169 + (12 - p2 as u32) * 13 + kicker);
-//     }
-//
-//     // ---- ONE PAIR ----
-//     if pairs.len() == 1 {
-//         let p = pairs[0];
-//         let mask = remove_rank(rank_mask, p);
-//         let kickers = top_n_from_mask(mask, 3);
-//         return 5000 + ((12 - p as u32) * 2197 + kickers);
-//     }
-//
-//     // ---- HIGH CARD ----
-//     6000 + top_n_from_mask(rank_mask, 5)
-// }
 #[pymodule]
 fn poker_server_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(exact_flop_equity, m)?)?;
