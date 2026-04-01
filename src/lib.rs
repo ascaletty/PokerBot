@@ -1,3 +1,5 @@
+use core::fmt;
+
 use pyo3::prelude::*;
 
 /// A Python module implemented in Rust.
@@ -145,7 +147,7 @@ fn eval_7_fast_u8(cards: &[u8; 7]) -> u32 {
     // ---------------------------
     for s in 0..4 {
         if let Some(high) = is_straight(suit_mask[s]) {
-            return 8_000_000 + high as u32;
+            return 8 + high as u32;
         }
     }
 
@@ -154,7 +156,7 @@ fn eval_7_fast_u8(cards: &[u8; 7]) -> u32 {
     // ---------------------------
     if let Some(q) = four {
         let kicker_mask = rank_mask & !(1 << q);
-        return 7_000_000 + (q as u32 * 13 + top_kicker(kicker_mask, 1));
+        return 7 + (q as u32 * 13 + top_kicker(kicker_mask, 1));
     }
 
     // ---------------------------
@@ -162,7 +164,7 @@ fn eval_7_fast_u8(cards: &[u8; 7]) -> u32 {
     // ---------------------------
     if let Some(t) = trips[0] {
         if let Some(p) = pairs[0].or(trips[1]) {
-            return 6_000_000 + (t as u32 * 13 + p as u32);
+            return 6 + (t as u32 * 13 + p as u32);
         }
     }
 
@@ -221,6 +223,138 @@ fn remove2(deck: &[u8], i: usize, j: usize) -> ([u8; 2], usize) {
 
     ([a, b], 2)
 }
+#[rustfmt::skip]
+const HAND_RANKING: [f32; 169] = [
+    1.00, // AA (0)
+    0.99, // KK (1)
+    0.98, // QQ (2)
+    0.97, // JJ (3)
+    0.96, // TT (4)
+    0.95, // 99 (5)
+    0.80, // 88 (6)
+    0.70, // 77 (7)
+    0.65, // 66 (8)
+    0.60, // 55 (9)
+    0.60, // 44 (10)
+    0.55, // 33 (11)
+    0.40, // 22 (12)
+    0.98, 0.97, 0.95, 0.94, 0.93, 0.92, 0.91, 0.90, 0.89, 0.85, 0.84,0.83, // AKs → A2s (13–24)
+    0.97, 0.96, 0.95, 0.94, 0.93, 0.92, 0.91, 0.90, 0.89, 0.85, 0.84, // KQs → K2s (25–35)
+    0.87, 0.85, 0.84, 0.83, 0.82, 0.81, 0.80, 0.79, 0.78,0.75, // QJs → Q2s (36–45)
+    0.74, 0.73, 0.71, 0.65, 0.64, 0.63, 0.62, 0.60,// JTs → J2s (46–53)
+    0.65, 0.60, 0.35, 0.25, 0.20, 0.0, 0.0,  // T9s → T2s (54–60)
+    0.60, 0.35, 0.25, 0.20, 0.0, 0.00, // 98s → 92s (61–66)
+    0.50, 0.40, 0.10, 0.05, 0.02, // 87s → 82s (67–71)
+    0.45, 0.30, 0.10, 0.0, 0.00, // 76s → 72s (72–76)
+    0.40, 0.30, 0.0, 0.00, // 65s → 62s (77–80)
+    0.30, 0.0, 0.00, // 54s → 52s (81–83)
+    0.24, 0.0, // 43s → 42s (84–85)
+    0.20, // 32s (86)
+    0.98, //AKo (87)
+    0.90, 0.87, 0.86, 0.80, 0.78, 0.75, 0.75, 0.73, 0.72, 0.70, 0.72,0.71, // AQo → A2o (88–100)
+    0.65, 0.60, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.20, 0.10, 0.0, // KQo → K2o (101–113)
+    0.65, 0.45, 0.0, 0.0, 0.4, 0.3, 0.2, 0.10, 0.0, 0.0,0.0, // QJo → Q2o (114–124)
+    0.50, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0,0.0,  // JTo → J2o (125–135)
+    0.60, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  // T9o → T2o (136–143)
+    0.40, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, //98o->92o
+    0.30, 0.0, 0.0, 0.0, 0.0, 0.0, //87o-> 82o
+    0.20, 0.0, 0.0, 0.0, 0.0, //76o->72o
+    0.0, 0.0, 0.0, 0.0, //65o->62o
+    0.0, 0.0, 0.0, //54o->52o
+    0.0, 0.0, //43o-> 42o
+    0.0, //32o
+];
+const Hand_Ranking: [f64; 169] = [
+    // AA thru A2s
+    1.0, 0.98, 0.97, 0.96, 0.95, 0.94, 0.93, 0.92, 0.91, 0.90, 0.89, 0.89, 0.88,
+    //AKo thru K2s
+    0.90, 0.99, 0.97, 0.96, 0.95, 0.94, 0.93, 0.92, 0.91, 0.90, 0.89, 0.85, 0.84,
+    //AQo thru Q2s
+    0.87, 0.87, 0.98, 0.87, 0.85, 0.84, 0.83, 0.82, 0.81, 0.80, 0.79, 0.78, 0.77,
+    //AJo thru J2s
+    0.80, 0.78, 0.75, 0.96, 0.74, 0.73, 0.72, 0.71, 0.65, 0.65, 0.63, 0.62, 0.60,
+    //ATo T2s
+    0.75, 0.73, 0.72, 0.70, 0.95, 0.65, 0.60, 0.35, 0.25, 0.20, 0.0, 0.0, //A9o thru 92s
+    0.72, 0.65, 0.60, 0.55, 0.50, 0.80, 0.60, 0.50, 0.40, 0.10, 0.05, 0.02,
+    //A8o thru 82s
+    0.70, 0.55, 0.50, 0.45, 0.40, 0.35, 0.70, 0.55, 0.50, 0.30, 0.20, 0.10,
+    //A7o thru 72s
+    0.65, 0.45, 0.0, 0.0, 0.40, 0.30, 0.20, 0.65, 0.60, 0.50, 0.30, 0.0, 0.0,
+    //A6o thru 62s
+    0.60, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.60, 0.45, 0.30, 0.0, 0.0, //A5o thru 52s
+    0.5, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.60, 0.30, 0.25, 0.0, //A4o thru 42s
+    0.40, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.55, 0.25, //A3o thru 32s
+    0.30, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.50, 0.0,
+    //A2o thru 2s
+    0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.40,
+];
+
+#[pyfunction]
+pub fn hand_to_index(a: u8, b: u8) -> usize {
+    let ra = (a % 13) as usize;
+    let rb = (b % 13) as usize;
+
+    let sa = a / 13;
+    let sb = b / 13;
+
+    let (hi, lo, suited) = if ra > rb {
+        (ra, rb, sa == sb)
+    } else {
+        (rb, ra, sa == sb)
+    };
+
+    // -------------------------
+    // 1) Pocket pairs: 0..12
+    // AA(12)->0, KK(11)->1, ..., 22(0)->12
+    // -------------------------
+    if hi == lo {
+        return 12 - hi;
+    }
+
+    // -------------------------
+    // 2) Suited hands: 13..90
+    // lexicographic ordering: AKs highest, 32s lowest
+    // -------------------------
+    let mut idx = 0;
+    if suited {
+        for r1 in (0..=12).rev() {
+            for r2 in (0..r1).rev() {
+                if r1 == hi && r2 == lo {
+                    return 13 + idx;
+                }
+                idx += 1;
+            }
+        }
+    }
+
+    // -------------------------
+    // 3) Offsuit hands: 91..168
+    // same ordering as suited block
+    // -------------------------
+    let mut idx = 0;
+
+    for r1 in (0..=12).rev() {
+        for r2 in (0..r1).rev() {
+            if r1 == hi && r2 == lo {
+                return 13 + 78 + idx;
+            }
+            idx += 1;
+        }
+    }
+
+    unreachable!()
+}
+#[pyfunction]
+fn hand_to_ranking(cards: Vec<String>) -> (f32, usize) {
+    let mut cards_parsed = [0; 2];
+    cards_parsed[0] = parse_card(&cards[0]);
+
+    cards_parsed[1] = parse_card(&cards[1]);
+
+    let index = hand_to_index(cards_parsed[0], cards_parsed[1]);
+    print!("index{}", index);
+    (HAND_RANKING[index], index)
+}
 #[pyfunction]
 fn exact_flop_equity(my: [u8; 2], flop: [u8; 3]) -> (u64, u64) {
     let (mut deck, deck_len) = build_deck_excluding(build_used_mask(&my, &flop));
@@ -276,6 +410,7 @@ fn exact_flop_equity(my: [u8; 2], flop: [u8; 3]) -> (u64, u64) {
 fn poker_server_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(exact_flop_equity, m)?)?;
     m.add_function(wrap_pyfunction!(parse_card, m)?)?;
-
+    m.add_function(wrap_pyfunction!(hand_to_index, m)?)?;
+    m.add_function(wrap_pyfunction!(hand_to_ranking, m)?)?;
     Ok(())
 }
